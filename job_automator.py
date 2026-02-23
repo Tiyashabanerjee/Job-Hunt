@@ -204,7 +204,7 @@ def filter_relevant_jobs(jobs: list, profile: dict, already_seen: set) -> list:
         jid = job["job_id"]
         if jid in already_seen or jid in seen_ids:
             continue
-        if REMOTE_ONLY and not job.get("remote"):
+if REMOTE_ONLY and not job.get("remote"):
     continue
 
 # US only filter
@@ -222,6 +222,8 @@ us_states = ["alabama","alaska","arizona","arkansas","california","colorado",
     "miami","dallas","houston","phoenix","portland","remote"]
 if not any(kw in location for kw in us_states + us_keywords):
     continue
+if not relevant_jobs:
+    pass
 
         text = (job["title"] + " " + job["description"]).lower()
         role_match  = any(role.split()[0] in text for role in target_roles)
