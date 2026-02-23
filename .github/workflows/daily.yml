@@ -1,0 +1,54 @@
+name: 🚀 Daily Job Automator
+
+on:
+  schedule:
+    # Runs at 5:00 AM UTC every day
+    - cron: "0 5 * * *"
+  # Allows manual run from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  run-job-automator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 🚀 Run Job Automator
+        env:
+          GROQ_API_KEY:       ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_SHEET_ID:    ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDS_JSON:  ${{ secrets.GOOGLE_CREDS_JSON }}
+          YOUR_EMAIL:         ${{ secrets.YOUR_EMAIL }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RESUME_TEXT:        ${{ secrets.RESUME_TEXT }}
+          REMOTE_ONLY:        ${{ secrets.REMOTE_ONLY }}
+        run: python job_automator.py
+
+      - name: 🚨 Notify on failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.YOUR_EMAIL }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "⚠️ Job Automator Failed — Check GitHub Actions"
+          to: ${{ secrets.YOUR_EMAIL }}
+          from: ${{ secrets.YOUR_EMAIL }}
+          body: |
+            Your daily job automation workflow failed.
+
+            Check the full logs here:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
