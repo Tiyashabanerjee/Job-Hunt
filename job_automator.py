@@ -194,6 +194,42 @@ def fetch_themuse_jobs() -> list:
 
 
 def filter_relevant_jobs(jobs: list, profile: dict, already_seen: set) -> list:
+    target_roles = [r.lower() for r in profile.get("target_roles", [])]
+    skills       = [s.lower() for s in profile.get("skills", [])[:8]]
+    seen_ids     = set()
+    filtered     = []
+
+    for job in jobs:
+        jid = job["job_id"]
+        if jid in already_seen or jid in seen_ids:
+            continue
+        if REMOTE_ONLY and not job.get("remote"):
+            continue
+
+        # US filter — only skip if location is clearly non-US
+        location = job.get("location", "").lower()
+        non_us = ["india","uk","germany","france","canada","australia",
+            "netherlands","singapore","brazil","spain","italy","poland",
+            "sweden","norway","denmark","finland","switzerland","austria",
+            "belgium","portugal","mexico","argentina","colombia","philippines",
+            "pakistan","bangladesh","nigeria","kenya","south africa","egypt",
+            "dubai","uae","london","berlin","paris","toronto","sydney","mumbai",
+            "bangalore","delhi","amsterdam","remote - uk","remote - europe",
+            "remote - canada","remote - australia"]
+        if location and any(kw in location for kw in non_us):
+            continue
+
+        # Relevance filter — only needs 1 match now
+        text = (job["title"] + " " + job["description"]).lower()
+        role_match  = any(role.split()[0] in text for role in target_roles)
+        skill_match = sum(1 for sk in skills if sk in text) >= 1
+
+        if role_match or skill_match:
+            seen_ids.add(jid)
+            filtered.append(job)
+
+    print(f"   🎯 {len(filtered)} relevant new jobs after filtering")
+    return filtered[:20]
     """Filter by relevance to profile and remove duplicates."""
     target_roles = [r.lower() for r in profile.get("target_roles", [])]
     skills       = [s.lower() for s in profile.get("skills", [])[:8]]
